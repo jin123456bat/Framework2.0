@@ -1,13 +1,12 @@
 <?php
 class webApplication
 {
-    function init()
-    {
-        
-    }
-    
-    function run()
-    {
-        
-    }
+
+	function init()
+	{
+	}
+
+	function run()
+	{
+	}
 }
