@@ -2,8 +2,8 @@
 class get
 {
 
-	function __get($var)
+	function __get($name)
 	{
-		return isset($_GET[$var]) ? (new variable($_GET[$var]))->trim() : NULL;
+		return isset($_GET[$name]) ? (new variable($_GET[$name]))->trim() : NULL;
 	}
 }

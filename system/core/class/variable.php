@@ -1,18 +1,17 @@
 <?php
 
 /**
- * 变量
- * 
+ * $post $get基类
  * @author 程晨
  */
 class variable
 {
 
-	private $var;
+	public $var;
 
 	function __construct($var)
 	{
-		$this->var = $var;
+		$this->var = str_replace(' ', '', urldecode($var));
 	}
 
 	function __toString()
