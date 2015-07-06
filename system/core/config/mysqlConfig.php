@@ -1,4 +1,9 @@
 <?php
+/**
+ * mysql配置文件
+ * @author 程晨
+ *
+ */
 class mysqlConfig extends config
 {
 	public $db_type = 'mysql';
