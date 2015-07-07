@@ -24,7 +24,7 @@ class view extends base
 
 	/**
 	 * 缓存并返回模板
-	 * 
+	 *
 	 * @return mixed
 	 */
 	function display()
@@ -43,7 +43,7 @@ class view extends base
 
 	/**
 	 * 替换模板变量
-	 * 
+	 *
 	 * @param unknown $var        	
 	 * @param unknown $val        	
 	 */

@@ -4,10 +4,8 @@ namespace system\core\config;
 use system\core\inter\config;
 
 /**
- * 系统配置
  *
  * @author 程晨
- *        
  */
 class systemConfig extends config
 {
@@ -18,9 +16,10 @@ class systemConfig extends config
 	 * @var unknown
 	 */
 	public $version = '1.0';
-	
+
 	/**
 	 * 字符集
+	 *
 	 * @var unknown
 	 */
 	public $charset = 'utf-8';

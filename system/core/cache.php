@@ -30,7 +30,7 @@ class cache extends base
 
 	/**
 	 * 检查缓存是否可用
-	 * 
+	 *
 	 * @param unknown $url        	
 	 * @return string|NULL 可用的话返回缓存内容 不可用返回NULL
 	 */
