@@ -1,7 +1,9 @@
 <?php
+namespace system\core;
 
 /**
  * $post $get基类
+ *
  * @author 程晨
  */
 class variable
@@ -21,7 +23,8 @@ class variable
 
 	function trim()
 	{
-		if (is_string($this->var)) {
+		if(is_string($this->var))
+		{
 			return new variable(trim($this->var));
 		}
 		return new variable($this->var);
@@ -29,7 +32,8 @@ class variable
 
 	function ltrim()
 	{
-		if (is_string($this->var)) {
+		if(is_string($this->var))
+		{
 			return new variable(ltrim($this->var));
 		}
 		return new variable($this->var);
@@ -37,7 +41,8 @@ class variable
 
 	function rtrim()
 	{
-		if (is_string($this->var)) {
+		if(is_string($this->var))
+		{
 			return new variable(rtrim($this->var));
 		}
 		return new variable($this->var);
@@ -45,7 +50,8 @@ class variable
 
 	function regex($pattern)
 	{
-		if (preg_match($pattern, $this->var, $match)) {
+		if(preg_match($pattern, $this->var, $match))
+		{
 			return (new variable($match[0]))->trim();
 		}
 		return new variable($this->var);
@@ -53,8 +59,9 @@ class variable
 
 	function replace($search, $replace, $count = 0)
 	{
-		if (is_string($this->var)) {
-			if (empty($count))
+		if(is_string($this->var))
+		{
+			if(empty($count))
 				return (new variable(str_replace($search, $replace, $this->var)))->trim();
 			return (new variable(str_replace($search, $replace, $this->var, $count)))->trim();
 		}
@@ -69,7 +76,8 @@ class variable
 	function int()
 	{
 		$pattern = '$\d+$';
-		if (preg_match($pattern, $this->var, $match)) {
+		if(preg_match($pattern, $this->var, $match))
+		{
 			return (new variable($match[0]))->trim();
 		}
 		return new variable($this->var);
@@ -81,7 +89,8 @@ class variable
 	function number()
 	{
 		$pattern = '$[-+]?\d+\.*\d*$';
-		if (preg_match($pattern, $this->var, $match)) {
+		if(preg_match($pattern, $this->var, $match))
+		{
 			return (new variable($match[0]))->trim();
 		}
 		return new variable($this->var);
@@ -93,7 +102,8 @@ class variable
 	function word()
 	{
 		$pattern = '$[a-zA-Z]+[a-zA-Z0-9]+$';
-		if (preg_match($pattern, $this->var, $match)) {
+		if(preg_match($pattern, $this->var, $match))
+		{
 			return (new variable($match[0]))->trim();
 		}
 		return new variable($this->var);

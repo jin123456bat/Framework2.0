@@ -1,4 +1,12 @@
 <?php
+namespace system\core;
+
+/**
+ * $_GET管理
+ *
+ * @author 程晨
+ *        
+ */
 class get
 {
 

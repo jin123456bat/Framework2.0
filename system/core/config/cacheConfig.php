@@ -1,6 +1,11 @@
 <?php
+namespace system\core\config;
+
+use system\core\inter\config;
+
 class cacheConfig extends config
 {
+
 	function __construct()
 	{
 		/**
@@ -11,12 +16,12 @@ class cacheConfig extends config
 		/**
 		 * 缓存文件保存路径
 		 */
-		$this->path = ROOT.'';
+		$this->path = ROOT . '/system/cache/template';
 		
 		/**
 		 * 缓存文件有效期
 		 */
-		$this->time = 5*60;
+		$this->time = 5 * 60;
 		
 		/**
 		 * 缓存文件后缀
