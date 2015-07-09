@@ -9,35 +9,28 @@ namespace system\core;
  */
 class base
 {
-
+	
 	/**
 	 * post类
 	 *
 	 * @var $_POST
 	 */
 	protected $post;
-
+	
 	/**
 	 * get类
 	 *
 	 * @var $_GET
 	 */
 	protected $get;
-
+	
 	/**
 	 * file类
 	 *
 	 * @var $_FILES
 	 */
 	protected $file;
-
-	/**
-	 * 线程类
-	 *
-	 * @var class thread
-	 */
-	protected $thread;
-
+	
 	/**
 	 * http管理
 	 *
@@ -50,5 +43,6 @@ class base
 		$this->post = new post();
 		$this->get = new get();
 		$this->http = new http();
+		$this->file = new file();
 	}
 }

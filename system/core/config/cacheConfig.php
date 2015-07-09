@@ -11,7 +11,7 @@ class cacheConfig extends config
 		/**
 		 * 是否开启缓存
 		 */
-		$this->cache = true;
+		$this->cache = false;
 		
 		/**
 		 * 缓存文件保存路径

@@ -10,13 +10,13 @@ use system\core\config\viewConfig;
  */
 class webApplication extends base
 {
-
 	private $_config;
 
 	function __construct($config)
 	{
 		$this->_config = $config;
 		parent::__construct();
+		date_default_timezone_set($this->_config['timezone']);
 	}
 
 	/**
@@ -26,6 +26,7 @@ class webApplication extends base
 	{
 		$response = new response();
 		$cacheConfig = config('cache');
+		
 		if($cacheConfig['cache'])
 		{
 			$cache = cache::getInstance($cacheConfig);
@@ -43,15 +44,14 @@ class webApplication extends base
 			{
 				list ($control, $action) = $handler;
 				include ROOT . '/application/control/' . $control . '.php';
-				$class = $control . 'Control';
+				$class = 'application\\control\\' . $control . 'Control';
 				if(class_exists($class))
 				{
 					$class = new $class();
 					$class->response = &$response;
 					if(method_exists($class, $action))
 					{
-						$viewConfig = config('view');
-						$class->view = new view($viewConfig, $control);
+						
 						$response->setCode(200);
 						$response->appendBody($this->__200($class, $action));
 					}
@@ -62,7 +62,7 @@ class webApplication extends base
 			else
 			{
 				include ROOT . '/application/thread/' . $handler . '.php';
-				$class = $handler . 'Thread';
+				$class = 'application\\thread\\' . $handler . 'Thread';
 				$class = new $class();
 				$class->run();
 			}

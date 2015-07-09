@@ -10,4 +10,8 @@ use system\core\inter\config;
  */
 class viewConfig extends config
 {
+	function __construct()
+	{
+		$this->path = ROOT . '/application/template';
+	}
 }

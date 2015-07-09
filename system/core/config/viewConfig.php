@@ -18,5 +18,10 @@ class viewConfig extends config
 		$this->suffix = 'html';
 		$this->leftContainer = '{%';
 		$this->rightContainer = '%}';
+		
+		/**
+		 * 标签嵌套最大次数
+		 */
+		$this->containerTimes = 3;
 	}
 }

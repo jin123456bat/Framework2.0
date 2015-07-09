@@ -7,20 +7,35 @@ namespace system\core;
  * @author 程晨
  *        
  */
-class control
+class control extends base
 {
-
+	
 	/**
 	 * response管理
 	 *
 	 * @var unknown
 	 */
 	public $response;
-
+	
 	/**
 	 * 模板管理
 	 *
 	 * @var unknown
 	 */
-	public $view;
+	protected $view;
+	
+	/**
+	 * 线程管理
+	 *
+	 * @var unknown
+	 */
+	protected $thread;
+
+	function __construct()
+	{
+		parent::__construct();
+		$this->thread = new thread();
+		$viewConfig = config('view');
+		$class->view = new view($viewConfig, $control);
+	}
 }

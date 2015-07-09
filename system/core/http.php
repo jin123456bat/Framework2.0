@@ -37,19 +37,13 @@ class http
 			{
 				case 'pathinfo':
 					$parameter = '/' . urlencode($c) . '/' . urlencode($a);
+					foreach($array as $key => $value)
+					{
+						$parameter .= '/' . $key . '/' . urlencode($value);
+					}
 				default:
 					$parameter = '?c=' . urlencode($c) . '&a=' . urlencode($a);
-			}
-			foreach($array as $key => $value)
-			{
-				switch($config['pathmode'])
-				{
-					case 'pathinfo':
-						$parameter .= '/' . $key . '/' . urlencode($value);
-						break;
-					default:
-						$parameter .= '&' . $key . '=' . urlencode($value);
-				}
+					$parameter .= '&' . http_build_query($array);
 			}
 			$query = ($query === NULL) ? '' : '#' . $query;
 			return $protocal . $this->host() . $port . $_SERVER['PHP_SELF'] . $parameter . $query;
@@ -71,7 +65,7 @@ class http
 	 *
 	 * @return string unix时间戳
 	 */
-	function time()
+	public static function time()
 	{
 		return $_SERVER['REQUEST_TIME'];
 	}

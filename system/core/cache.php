@@ -8,9 +8,7 @@ namespace system\core;
  */
 class cache extends base
 {
-
 	private $_config;
-
 	private static $_instance;
 
 	function __construct($config)
@@ -37,7 +35,7 @@ class cache extends base
 	public function check($url)
 	{
 		$md5 = md5($url);
-		$file = trim($this->_config['path'], '/') . '/' . $md5 . '.' . $this->_config['suffix'];
+		$file = filesystem::path($this->_config['path'] . '/' . $md5 . '.' . $this->_config['suffix']);
 		if(is_file($file))
 		{
 			$mtime = filemtime($file);
@@ -57,7 +55,7 @@ class cache extends base
 	public function write($url, $content)
 	{
 		$md5 = md5($url);
-		$file = trim($this->_config['path'], '/') . '/' . $md5 . '.' . $this->_config['suffix'];
+		$file = filesystem::path($this->_config['path'] . '/' . $md5 . '.' . $this->_config['suffix']);
 		return file_put_contents($file, $content);
 	}
 }
