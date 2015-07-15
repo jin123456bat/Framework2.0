@@ -1,5 +1,5 @@
 <?php
-namespace system\cache;
+namespace system\core;
 
 class redis
 {

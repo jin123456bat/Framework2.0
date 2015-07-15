@@ -14,9 +14,24 @@ class viewConfig extends config
 
 	function __construct()
 	{
+		/**
+		 * 模板保存路径
+		 */
 		$this->path = ROOT . '/system/template/';
+		
+		/**
+		 * 模板后缀
+		 */
 		$this->suffix = 'html';
+		
+		/**
+		 * 标签左开始符
+		 */
 		$this->leftContainer = '{%';
+		
+		/**
+		 * 标签右结束符号
+		 */
 		$this->rightContainer = '%}';
 		
 		/**
