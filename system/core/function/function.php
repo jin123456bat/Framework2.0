@@ -7,25 +7,29 @@
  *        	配置名称
  * @param bool $parent
  *        	强制只载入系统配置
- * @return unknown
+ * @return new config
  */
 function config($name, $parent = false)
 {
 	static $_instance = array();
-	if(! isset($_instance[$name]))
-	{
+	if (! isset($_instance[$name])) {
 		$classname = $name . 'Config';
 		$path = ROOT . '/system/core/config/' . $classname . '.php';
-		include $path;
-		$namespace = 'system\\core\\config\\' . $classname;
-		$_instance[$name] = new $namespace();
+		if (file_exists($path)) {
+			include $path;
+			$namespace = 'system\\core\\config\\' . $classname;
+			$_instance[$name] = new $namespace();
+		}
 		$userPath = ROOT . '/application/config/' . $classname . '.php';
-		if(file_exists($userPath) && ! $parent)
-		{
+		if (file_exists($userPath) && ! $parent) {
 			$namespace = '\\application\\config\\' . $classname;
 			include $userPath;
 			$userViewConfig = new $namespace();
-			$_instance[$name] = $_instance[$name]->combine($userViewConfig);
+			if (isset($_instance[$name])) {
+				$_instance[$name] = $_instance[$name]->combine($userViewConfig);
+			} else {
+				$_instance[$name] = $userViewConfig;
+			}
 		}
 	}
 	return $_instance[$name];

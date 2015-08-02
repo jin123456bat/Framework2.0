@@ -18,6 +18,5 @@ class indexControl extends control
 	 * optional
 	 */
 	function __404()
-	{
-	}
+	{}
 }

@@ -26,24 +26,19 @@ class http
 	{
 		$protocal = (isset($_SERVER['https']) ? 'https://' : 'http://');
 		$port = isset($_SERVER['https']) ? (($this->port() == 443) ? '' : ':' . $this->port()) : (($this->port() == 80) ? '' : ':' . $this->port());
-		if($c === NULL && $a === NULL)
-		{
+		if ($c === NULL && $a === NULL) {
 			return $protocal . $this->host() . $port . $_SERVER['PHP_SELF'] . '?' . $_SERVER['QUERY_STRING'];
-		}
-		else
-		{
+		} else {
 			$config = config('system', true);
-			switch($config['pathmode'])
-			{
+			switch ($config['pathmode']) {
 				case 'pathinfo':
 					$parameter = '/' . urlencode($c) . '/' . urlencode($a);
-					foreach($array as $key => $value)
-					{
+					foreach ($array as $key => $value) {
 						$parameter .= '/' . $key . '/' . urlencode($value);
 					}
 				default:
 					$parameter = '?c=' . urlencode($c) . '&a=' . urlencode($a);
-					$parameter .= '&' . http_build_query($array);
+					$parameter .= empty($array)?'':('&' . http_build_query($array));
 			}
 			$query = ($query === NULL) ? '' : '#' . $query;
 			return $protocal . $this->host() . $port . $_SERVER['PHP_SELF'] . $parameter . $query;
@@ -100,6 +95,15 @@ class http
 	{
 		return $_SERVER['SERVER_PORT'];
 	}
+	
+	/**
+	 * 页面跳转
+	 * @param unknown $url
+	 */
+	function jump($url)
+	{
+		header('Location: '.$url,'302',true);
+	}
 
 	/**
 	 * 协议
@@ -129,5 +133,14 @@ class http
 	function agnet()
 	{
 		return get_browser(NULL, true);
+	}
+	
+	/**
+	 * 脚本路径
+	 * @return unknown
+	 */
+	function path()
+	{
+		return pathinfo($_SERVER['PHP_SELF'],PATHINFO_DIRNAME);
 	}
 }

@@ -1,4 +1,7 @@
 <?php
+namespace system\core\db;
+
+use \PDO;
 /**
  * mysql类
  *
@@ -25,7 +28,7 @@ class mysql
 	 */
 	public static function getInstance($config = NULL)
 	{
-		if(empty(self::$mysql))
+		if (empty(self::$mysql))
 			self::$mysql = new mysql($config);
 		return self::$mysql;
 	}
@@ -38,9 +41,8 @@ class mysql
 		$this->pdo = new PDO($this->config['db_type'] . ':host=' . $this->config['db_server'] . ';dbname=' . $this->config['db_dbname'], $this->config['db_user'], $this->config['db_password'], array(
 			PDO::ATTR_PERSISTENT => $this->config['db_forever']/*持久化连接*/));
 		// 设置异常模式为抛出异常
-		if(! $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION))
-		{
-			throw new Exception('设置异常失败');
+		if (! $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION)) {
+			throw new \Exception('设置异常失败');
 		}
 		$this->setCharset($this->config['db_charset']);
 	}
@@ -52,7 +54,7 @@ class mysql
 	 */
 	public function setCharset($charset)
 	{
-		$this->query('set names `' . $charset . '`');
+		$this->exec('set names `' . $charset . '`');
 	}
 
 	/**
@@ -61,22 +63,16 @@ class mysql
 	public function query($sql, array $array = array())
 	{
 		$statement = $this->pdo->prepare($sql);
-		if($statement)
-		{
+		if ($statement) {
 			$result = $statement->execute($array);
-			if($result)
-			{
-				if(strtolower(substr($statement->queryString, 0, 6)) == 'select')
-				{
-					
-					$array = array();
-					while($row = $statement->fetch(PDO::FETCH_ASSOC))
-						$array[] = $row;
-					return $array;
+			if ($result) {
+				if (strtolower(substr($statement->queryString, 0, 6)) == 'select') {
+					return $statement->fetchAll(PDO::FETCH_ASSOC);
 				}
-				return $result;
+				return $statement->rowCount();
 			}
 		}
+		return false;
 	}
 
 	/**
@@ -87,8 +83,7 @@ class mysql
 	 */
 	public function exec($sql)
 	{
-		$result = $this->pdo->query($sql);
-		return $result->fetchAll();
+		$this->pdo->query($sql);
 	}
 
 	/**
@@ -118,8 +113,8 @@ class mysql
 	/**
 	 * 上一次插入的id
 	 */
-	public function lastInsert($name)
+	public function lastInsert()
 	{
-		return $this->pdo->lastInsertId($name);
+		return $this->pdo->lastInsertId();
 	}
 }

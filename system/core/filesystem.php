@@ -17,6 +17,19 @@ class filesystem
 	{
 		return realpath($path);
 	}
+	
+	/**
+	 * 删除文件
+	 * @param unknown $file
+	 * @return boolean
+	 */
+	public static function remove($file)
+	{
+		$path = self::path($file);
+		if($path)
+			return @unlink($path);
+		return true;
+	}
 
 	/**
 	 * 返回文件大小
@@ -50,8 +63,7 @@ class filesystem
 	public static function rmdir($dir)
 	{
 		$dirs = self::scan($dir);
-		foreach($dirs as $directory)
-		{
+		foreach ($dirs as $directory) {
 			@unlink($directory);
 		}
 		return rmdir($dir);
@@ -70,21 +82,17 @@ class filesystem
 	{
 		static $array = array();
 		$dir = self::path($dir);
-		$array = array_merge(array_map(function ($filename)
-		{
-			if(filename === '.' || $filename == '..')
-			{
+		$array = array_merge(array_map(function ($filename) {
+			if (filename === '.' || $filename == '..') {
 				continue;
 			}
 			$filepath = self::path($dir . '/' . $filename);
-			if(is_dir($filepath) && $sdir)
-			{
+			if (is_dir($filepath) && $sdir) {
 				$array = array_merge($array, self::scan($filepath, $sdir));
-			}
-			else if(is_file($filepath))
-			{
-				return $filepath;
-			}
+			} else 
+				if (is_file($filepath)) {
+					return $filepath;
+				}
 		}, scandir($dir)));
 		return $array;
 	}
@@ -97,7 +105,7 @@ class filesystem
 	 */
 	public static function type($filename)
 	{
-		return pathinfo(self::path($filename), PATHINFO_EXTENSION);
+		return pathinfo($filename, PATHINFO_EXTENSION);
 	}
 
 	/**
@@ -108,7 +116,7 @@ class filesystem
 	 * @param unknown $magicFile        	
 	 * @return unknown
 	 */
-	public static function mimetype($file, $options = FILEINFO_MIME_TYPE, $magicFile)
+	public static function mimetype($file, $options = FILEINFO_MIME_TYPE, $magicFile = NULL)
 	{
 		$result = finfo_file(finfo_open($options, $magicFile), self::path($file));
 		// return $result ? $result : self::getMimeTypeByExtension($file);

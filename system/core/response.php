@@ -41,8 +41,7 @@ class response
 	 */
 	public function setCode($code)
 	{
-		if(is_int($code))
-		{
+		if (is_int($code)) {
 			$this->_code = $code;
 		}
 	}
@@ -82,9 +81,9 @@ class response
 	 *
 	 * @param unknown $string        	
 	 */
-	public function addHeader($string)
+	public function addHeader($key,$value = NULL)
 	{
-		$this->_header->add($string);
+		$this->_header->add($key,$value);
 	}
 
 	/**
