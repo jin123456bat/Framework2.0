@@ -19,7 +19,11 @@ class model
 
 	private $_table;
 
-	private $_temp;
+	public $_temp;
+	
+	private $_sql;
+	
+	private $_fields;
 
 	function __construct($table)
 	{
@@ -27,6 +31,44 @@ class model
 		$this->__loadDB();
 		$this->__loadMemcache();
 		$this->__loadRedis();
+		
+		$this->getTableName();
+	}
+	
+	public function model($table)
+	{
+		static $array = [];
+		if (!isset($array[$table]) || empty($array[$table]))
+		{
+			$array[$table] = new model($table);
+		}
+		return $array[$table];
+	}
+	
+	public function getFields()
+	{
+		return $this->_fields;
+	}
+	
+	public function setFields($fields)
+	{
+		$this->_fields = $fields;
+	}
+	
+	
+	/**
+	 * 获取表的字段名
+	 */
+	private function getTableName()
+	{
+		if (empty($this->_fields))
+		{
+			$result = $this->query('select COLUMN_NAME from information_schema.COLUMNS where table_name = ? and table_schema = ?',[$this->_table,$this->_db->getDBName()]);
+			foreach ($result as $field)
+			{
+				$this->_fields[] = $field['COLUMN_NAME'];
+			}
+		}
 	}
 
 	/**
@@ -43,7 +85,57 @@ class model
 	 */
 	private function __loadMemcache()
 	{
-		
+		if(memcached::ready())
+		{
+			$this->_memcache = new memcached(config('memcached'));
+		}
+	}
+	
+	/**
+	 * 过滤式搜索
+	 * @param array $filter
+	 * @return \system\core\Ambigous
+	 */
+	function fetch(array $filter = array())
+	{
+		$parameter = isset($filter['parameter'])?$filter['parameter']:'*';
+		if (isset($filter['start']) && isset($filter['length']))
+		{
+			$this->limit($filter['start'],$filter['length']);
+		}
+		if (isset($filter['sort']))
+		{
+			if (is_string($filter['sort']))
+			{
+				$this->orderby($filter['sort']);
+			}
+			else if (is_array($filter['sort']))
+			{
+				if (is_array($filter['sort'][0]))
+				{
+					foreach ($filter['sort'] as $value)
+					{
+						$this->orderby($value[0],$value[1]);
+					}
+				}
+				else
+				{
+					$this->orderby($filter['sort'][0],$filter['sort'][1]);
+				}
+			}
+		}
+		return $this->select($parameter);
+	}
+	
+	/**
+	 * 查询一条数据
+	 * @param string $parameter
+	 * @return Ambigous <NULL, \system\core\Ambigous>
+	 */
+	function find($parameter = '*')
+	{
+		$result = $this->limit(1)->select($parameter);
+		return isset($result[0])?$result[0]:NULL;
 	}
 
 	/**
@@ -54,12 +146,35 @@ class model
 		
 	}
 
-	public function select($field = '*')
+	/**
+	 * 查询多条记录
+	 * @param string $field
+	 * @return Ambigous <boolean, multitype:>
+	 */
+	public function select($field = '*',$debug = false)
 	{
-		$sql = 'select ' . $field . ' from ' . $this->_table . ' ' . (isset($this->_temp['where'])?$this->_temp['where']:'') .(isset($this->_temp['groupby'])?$this->_temp['groupby']:'').' '.(isset($this->_temp['orderby'])?$this->_temp['orderby']:'').' '.(isset($this->_temp['limit'])?$this->_temp['limit']:'');
-		$result = $this->_db->query($sql, empty($this->_temp['where']) ? array() : $this->_temp['array']);
+		$sql = 'select ' . $field . ' from ' . $this->_table.(isset($this->_temp['table'])?$this->_temp['table']:'') . ' ' . (isset($this->_temp['where'])?$this->_temp['where']:'') .(isset($this->_temp['groupby'])?$this->_temp['groupby']:'').' '.(isset($this->_temp['orderby'])?$this->_temp['orderby']:'').' '.(isset($this->_temp['limit'])?$this->_temp['limit']:'');
+		$array = empty($this->_temp['where']) ? [] : $this->_temp['array'];
+		if ($debug)
+			return [$sql,$array];
+		$result = $this->query($sql, $array);
 		unset($this->_temp);
 		return $result;
+	}
+	
+	function getSql()
+	{
+		return $this->_sql;
+	}
+	
+	/**
+	 * 保存执行的sql
+	 */
+	protected function initSql($sql,$parameter = array())
+	{
+		$this->_sql = new \stdClass();
+		$this->_sql->sql = $sql;
+		$this->_sql->parameter = $parameter;
 	}
 
 	/**
@@ -71,10 +186,20 @@ class model
 	 */
 	public function where($sql, array $array = array(),$combine = 'and')
 	{
+		//where语句中的in操作符单独使用
+		if (substr_count($sql, 'in')==1)
+		{
+			if(empty($array))
+			{
+				return $this;
+			}
+			$replace = implode(',', array_fill(0, count($array), '?'));
+			$sql = str_replace('?', $replace, $sql);
+		}
 		if (isset($this->_temp['where'])) {
-			$this->_temp['where'] = $this->_temp['where'] .' '. $combine.' ' . $sql;
+			$this->_temp['where'] = $this->_temp['where'] .' '. $combine.' ' .'('. $sql.')';
 		} else {
-			$this->_temp['where'] = 'where' . ' ' . $sql;
+			$this->_temp['where'] = 'where' . ' (' . $sql.')';
 		}
 		if (isset($this->_temp['array'])) {
 			$this->_temp['array'] = array_merge($this->_temp['array'], $array);
@@ -83,6 +208,8 @@ class model
 		}
 		return $this;
 	}
+	
+	
 
 	/**
 	 * 插入
@@ -90,8 +217,19 @@ class model
 	 * @param array $array        	
 	 * @return Ambigous <boolean, multitype:>
 	 */
-	public function insert(array $array)
+	public function insert(array $array,$debug = false)
 	{
+		$fields = empty($this->getFields())?'':'(`'.implode('`,`', $this->getFields()).'`)';
+		if (!array_key_exists(0, $array))
+		{
+			//对于非数字下标的数组，重新组合数组，以满足表中的字段顺序
+			$temp = [];
+			foreach ($this->getFields() as $field)
+			{
+					$temp[$field] = $array[$field];
+			}
+			$array = $temp;
+		}
 		$parameter = '';
 		foreach ($array as $key => $value) {
 			if (is_int($key)) {
@@ -101,8 +239,10 @@ class model
 			}
 		}
 		$parameter = rtrim($parameter, ',');
-		$sql = 'insert into ' . $this->_table . ' values (' . $parameter . ')';
-		$result = $this->_db->query($sql, $array);
+		$sql = 'insert into ' . $this->_table.(isset($this->_temp['table'])?$this->_temp['table']:'') .$fields.' values (' . $parameter . ')';
+		if ($debug)
+			return [$sql,$array];
+		$result = $this->query($sql, $array);
 		unset($this->_temp);
 		return $result;
 	}
@@ -114,7 +254,7 @@ class model
 	 * @param string|NULL $value        	
 	 * @return Ambigous <boolean, multitype:>
 	 */
-	public function update($key, $value = '')
+	public function update($key, $value = '',$debug = false)
 	{
 		if(is_array($key))
 		{
@@ -126,15 +266,17 @@ class model
 				$value[] = $b;
 			}
 			$parameter = rtrim($parameter,',');
-			$sql = 'update '.$this->_table.' set '.$parameter.' '.$this->_temp['where'];
+			$sql = 'update '.$this->_table.(isset($this->_temp['table'])?$this->_temp['table']:'').' set '.$parameter.' '.$this->_temp['where'];
 		}
 		else
 		{
-			$sql = 'update ' . $this->_table . ' set ' . $key . ' = ? ' . $this->_temp['where'];
+			$sql = 'update '. $this->_table.(isset($this->_temp['table'])?$this->_temp['table']:'') . ' set ' . $key . ' = ? ' . $this->_temp['where'];
 			$value = array($value);
 		}
 		$value = isset($this->_temp['array'])?array_merge($value,$this->_temp['array']):$value;
-		$result = $this->_db->query($sql, $value);
+		if ($debug)
+			return [$sql,$value];
+		$result = $this->query($sql, $value);
 		unset($this->_temp);
 		return $result;
 	}
@@ -146,12 +288,13 @@ class model
 	 * @param number $num        	
 	 * @return Ambigous <boolean, multitype:>
 	 */
-	public function increase($key, $num = 1)
+	public function increase($key, $num = 1,$debug = false)
 	{
-		$sql = 'update ' . $this->_table . ' set ' . $key . ' = ' . $key . ' + ? ' . $this->_temp['where'];
-		$result = $this->_db->query($sql, array_merge(array(
-			$num
-		), $this->_temp['array']));
+		$sql = 'update ' . $this->_table.(isset($this->_temp['table'])?$this->_temp['table']:'') . ' set ' . $key . ' = ' . $key . ' + ? ' . $this->_temp['where'];
+		$array = array_merge([$num], $this->_temp['array']);
+		if ($debug)
+			return [$sql,$array];
+		$result = $this->_db->query($sql,$array);
 		unset($this->_temp);
 		return $result;
 	}
@@ -161,10 +304,13 @@ class model
 	 * 
 	 * @return Ambigous <boolean, multitype:>
 	 */
-	public function delete()
+	public function delete($table = '',$debug = false)
 	{
-		$sql = 'delete from ' . $this->_table . ' ' . $this->_temp['where'];
-		$result = $this->_db->query($sql, $this->_temp['array']);
+		$sql = 'delete '.$table.(isset($this->_temp['table'])?$this->_temp['table']:'').' from ' . $this->_table . ' ' . $this->_temp['where'];
+		$array = empty($this->_temp['array'])?[]:$this->_temp['array'];
+		if ($debug)
+			return [$sql,$array];
+		$result = $this->query($sql, $array);
 		unset($this->_temp);
 		return $result;
 	}
@@ -220,12 +366,23 @@ class model
 	 */
 	public function table($table,$mode = ',',$on = '')
 	{
-		$this->_table .= ' '.$mode.' '.$table.' '.$on;
+		if(!isset($this->_temp['table']))
+		{
+			$this->_temp['table'] = ' '.$mode.' '.$table.' on '.$on;
+		}
+		else
+		{
+			$this->_temp['table'] .= ' '.$mode.' '.$table.' on '.$on;
+		}
+		return $this;
 	}
 	
-	public function query($sql)
+	public function query($sql,array $array = array(),$debug = false)
 	{
-		return $this->_db->query($sql);
+		$this->initSql($sql,$array);
+		if ($debug)
+			return [$sql,$array];
+		return $this->_db->query($sql,$array);
 	}
 	
 	public function transaction()

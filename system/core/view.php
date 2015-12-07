@@ -38,6 +38,7 @@ class view extends base
 	 */
 	function __construct($viewConfig, $viewname)
 	{
+		parent::__construct();
 		$this->_viewConfig = $viewConfig;
 		$this->_viewname = $viewname;
 		$this->_enginePath = ROOT.'/extends/smarty/Smarty.class.php';
@@ -58,18 +59,87 @@ class view extends base
 		$this->_smarty->left_delimiter = $this->_viewConfig->left_delimiter;							//设置左右标示符
 		$this->_smarty->right_delimiter = $this->_viewConfig->right_delimiter;
 		
-		$http = new http();
-		$baseUrl = rtrim("http://".$http->host().$http->path().'/application','/');
+		$http = $this->http->isHttps()?'https://':'http://';
+		$path = str_replace('\\', '/', $this->http->path());
+		$path = rtrim($path,'/');
+		$baseUrl = rtrim($http.$this->http->host().$path.'/application/template','/');
 		$this->_smarty->assign("VIEW_ROOT",$baseUrl);
 		$this->_smarty->registerPlugin('function',"url", array($this,'url'));
+		$this->_smarty->registerPlugin('function','resource',array($this,'resource'));
+		$this->_smarty->registerPlugin('function','formattime',array($this,'formattime'));
 		//include ROOT.'/extends/smarty/smartyex.class.php';
 		//$this->_smarty->registerObject("smartyex",new \smartyex());
 	}
 	
+	function formattime($parameter)
+	{
+		$second = $parameter['second'];
+		if($second < 5*60)
+		{
+			return "就在刚才";
+		}
+		else
+		{
+			$min = floor($second/60);
+			if($min <60)
+			{
+				return $min.'分钟前';
+			}
+			else
+			{
+				$hour = floor($min/60);
+				if($hour<24)
+				{
+					return $hour.'小时前';
+				}
+				else
+				{
+					$day = floor($hour/24);
+					return $day.'天前';
+				}
+			}
+		}
+	}
+	
+	/**
+	 * 图片路径转化
+	 * @param unknown $parameter
+	 * @return string
+	 */
+	function resource($parameter)
+	{
+		$fileid = $parameter['file'];
+		$uploadModel = $this->model('upload');
+		return $uploadModel->get($fileid,'path');
+	}
+	
+	/**
+	 * url生成
+	 * @param unknown $parameter
+	 * @return mixed
+	 */
 	function url($parameter)
 	{
-		$http = new http();
-		return call_user_func_array(array($http,'url'), $parameter);
+		$http = http::getInstance();
+		$c = isset($parameter['c'])?$parameter['c']:'';
+		$a = isset($parameter['a'])?$parameter['a']:'';
+		$urlencode = false;
+		if(isset($parameter['urlencode']))
+		{
+			$urlencode = $parameter['urlencode'];
+			unset($parameter['urlencode']);
+		}
+		unset($parameter['c']);
+		unset($parameter['a']);
+		$array = array('c'=>$c,'a'=>$a,'array'=>$parameter);
+		if(!$urlencode)
+		{
+			return call_user_func_array(array($http,'url'), $array);
+		}
+		else
+		{
+			return urlencode(call_user_func_array(array($http,'url'), $array));
+		}
 	}
 	
 	/**

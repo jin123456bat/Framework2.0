@@ -1,6 +1,7 @@
 <?php
 namespace system\core;
 
+use system\core\inter\config;
 /**
  * 上传文件管理
  *
@@ -9,15 +10,25 @@ namespace system\core;
  */
 class file
 {
+	private static $_instance;
+	
+	static function getInstance()
+	{
+		if (empty(self::$_instance))
+			self::$_instance = new self();
+		return self::$_instance;
+	}
 
-	function __construct()
+	private function __construct()
 	{
 		
 	}
 
 	function __get($name)
 	{
-		return $this->receive($_FILES[$name], config('file'));
+		if(isset($_FILES[$name]))
+			return $this->receive($_FILES[$name], config('file'));
+		return false;
 	}
 
 	/**
@@ -49,22 +60,61 @@ class file
 			if ($file['error'] != UPLOAD_ERR_OK) {
 				return $file['error'];
 			}
-			if ($file['size'] > $config['size']) {
+			
+			if (isset($config['size']) && $file['size'] > $config['size']) {
 				return UPLOAD_ERR_INI_SIZE;
 			}
-			if (!in_array($file['type'], $config['type'])) {
+			
+			$mimetype = filesystem::mimetype($file['tmp_name']);
+			if (isset($config['type']) && !in_array($mimetype, $config['type'])) {
 				return 8;
 			}
+			
 			if (! is_writable(filesystem::path($config['path'])) || !is_dir(filesystem::path($config['path']))) {
 				return UPLOAD_ERR_CANT_WRITE;
 			}
 			$type = empty(filesystem::type($file['name'])) ? 'tmpuploadfile' : filesystem::type($file['name']);
-			$filename = trim($config['path'], '/') . '/' . md5_file($file['tmp_name']) . sha1_file($file['tmp_name']) . '.' . $type;
+			$filename = rtrim($config['path'], '/') . '/' . md5_file($file['tmp_name']) . sha1_file($file['tmp_name']) . '.' . $type;
 			if (move_uploaded_file($file['tmp_name'], $filename)) {
 				return $filename;
 			}
 		}
 		return false;
+	}
+	
+	/**
+	 * 接收多文件
+	 * @param array $files
+	 * @param config $config
+	 * @return array 返回上传成功的文件的保存路径
+	 */
+	function receiveMultiFile($files,$config)
+	{
+		if (! is_writable(filesystem::path($config['path'])) || !is_dir(filesystem::path($config['path']))) {
+			return UPLOAD_ERR_CANT_WRITE;
+		}
+		$index = 0;
+		$path = array();
+		while(isset($files['error'][$index]))
+		{
+			if($files['error'][$index] == UPLOAD_ERR_OK)
+			{
+				if (!isset($config['size']) || $files['size'][$index] < $config['size'])
+				{
+					$mimetype = filesystem::mimetype($files['tmp_name'][$index]);
+					if(!isset($config['type']) || in_array($mimetype,$config['type']))
+					{
+						$type = empty(filesystem::type($files['name'][$index])) ? 'tmpuploadfile' : filesystem::type($files['name'][$index]);
+						$filename = rtrim($config['path'], '/') . '/' . md5_file($files['tmp_name'][$index]) . sha1_file($files['tmp_name'][$index]) . '.' . $type;
+						if (move_uploaded_file($files['tmp_name'][$index], $filename)) {
+							$path[] = $filename;
+						}
+					}
+				}
+			}
+			$index++;
+		}
+		return $path;
 	}
 
 	/**
@@ -153,13 +203,15 @@ class file
 	 */
 	static function realpathToUrl($path)
 	{
-		$path = realpath($path);
-		if($path)
+		if(empty($path))
+			return '';
+		if(is_file($path))
 		{
-			$path = str_replace(realpath(ROOT), '', $path);
-			$http = new http();
-			return rtrim('http://'.$http->host().$http->path(),'/').$path;
+			$path = str_replace(realpath(ROOT), '', realpath($path));
+			$http = http::getInstance();
+			$protocal = $http->isHttps()?'https://':'http://';
+			return str_replace('\\', '/',rtrim('http://'.$http->host().$http->path(),'/\\'). $path);
 		}
-		return NULL;
+		return '';
 	}
 }

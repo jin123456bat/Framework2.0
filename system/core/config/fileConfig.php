@@ -17,7 +17,7 @@ class fileConfig extends config
 		/**
 		 * 文件保存位置
 		 */
-		$this->path = ROOT . '/application/upload/';
+		$this->path =  './application/upload/';
 		
 		/**
 		 * 允许上传类型

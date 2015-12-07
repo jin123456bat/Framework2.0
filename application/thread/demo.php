@@ -7,5 +7,7 @@ class demoThread extends thread
 {
 
 	public function run()
-	{}
+	{
+		
+	}
 }

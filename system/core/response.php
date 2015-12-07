@@ -1,6 +1,5 @@
 <?php
 namespace system\core;
-
 /**
  * response管理
  *
@@ -9,7 +8,6 @@ namespace system\core;
  */
 class response
 {
-
 	/**
 	 *
 	 * @var int
@@ -37,7 +35,7 @@ class response
 	/**
 	 * 设置状态码
 	 *
-	 * @param unknown $code        	
+	 * @param unknown $code
 	 */
 	public function setCode($code)
 	{
@@ -63,7 +61,8 @@ class response
 	 */
 	public function setBody($body)
 	{
-		$this->_body = $body;
+		if($body !== NULL)
+			$this->_body = $body;
 	}
 
 	/**
@@ -112,6 +111,15 @@ class response
 	public function send()
 	{
 		http_response_code($this->_code);
+		if (is_object($this->_body))
+		{
+			$this->addHeader('Content-Type',$this->_body->getContentType());
+			if(!$this->_body->isCache())
+			{
+				$this->addHeader('Cache-Control','no-cache');
+				$this->addHeader('Pragma','no-cache');
+			}
+		}
 		$this->_header->sendAll();
 		echo $this->_body;
 		exit();

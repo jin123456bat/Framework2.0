@@ -19,6 +19,35 @@ class filter
 	}
 	
 	/**
+	 * 匹配url http|https|ftp
+	 * @param unknown $url
+	 * @return unknown|NULL
+	 */
+	static public function url($url)
+	{
+		$pattern = '$[htpfs]+://[^\s,\'\"]+$';
+		if(preg_match($pattern,$url,$match))
+		{
+			return $match[0];
+		}
+		return NULL;
+	}
+	
+	/**
+	 * 过滤数字 允许小数
+	 * @param unknown $var
+	 */
+	static public function number($var)
+	{
+		$pattern = '$\d+(\.\d+)?$';
+		if(preg_match($pattern, $var,$match))
+		{
+			return $match[0];
+		}
+		return NULL;
+	}
+	
+	/**
 	 * 过滤手机号码,失败返回NULL
 	 * @param unknown $string
 	 * @return unknown|NULL

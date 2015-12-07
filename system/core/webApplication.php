@@ -1,8 +1,5 @@
 <?php
 namespace system\core;
-
-use system\core\config\viewConfig;
-
 /**
  * 应用程序类
  *
@@ -10,13 +7,13 @@ use system\core\config\viewConfig;
  */
 class webApplication extends base
 {
-
 	private $_config;
 
 	function __construct($config)
 	{
 		$this->_config = $config;
 		parent::__construct();
+		
 		date_default_timezone_set($this->_config['timezone']);
 	}
 
@@ -25,6 +22,7 @@ class webApplication extends base
 	 */
 	function run()
 	{
+		
 		$response = new response();
 		$cacheConfig = config('cache');
 		
@@ -36,26 +34,37 @@ class webApplication extends base
 				$response->send();
 			}
 		}
+		
 		try {
 			$handler = $this->parseUrl();
 			if (is_array($handler)) {
 				list ($control, $action) = $handler;
-				include ROOT . '/application/control/' . $control . '.php';
-				$class = 'application\\control\\' . $control . 'Control';
-				if (class_exists($class)) {
-					$class = new $class();
-					$class->response = &$response;
-					
-					if (method_exists($class, $action)) {
-						$response->setCode(200);
-						$response->appendBody($this->__200($class, $action));
+				$path = ROOT . '/application/control/' . $control . '.php';
+				if(file_exists($path))
+				{
+					include $path;
+					$class = 'application\\control\\' . $control . 'Control';
+					if (class_exists($class)) {
+						//$class = new \ReflectionClass($class);
+						$class = new $class();
+						$class->response = &$response;
+						if ((method_exists($class, $action) && is_callable(array($class,$action))) || method_exists($class, '__call')) {
+							
+							$response->setCode(200);
+							$response->setBody($this->__200($class, $action));
+						} else {
+							$response->setCode(404);
+							$response->setBody($this->__404($control, $action));
+						}
 					} else {
 						$response->setCode(404);
-						$response->appendBody($this->__404($class, $action));
+						$response->setBody($this->__404($control, $action));
 					}
-				} else {
+				}
+				else
+				{
 					$response->setCode(404);
-					$response->appendBody($this->__404($class, $action));
+					$response->setBody($this->__404($control, $action));
 				}
 			} else {
 				include ROOT . '/application/thread/' . $handler . '.php';
@@ -67,7 +76,7 @@ class webApplication extends base
 		catch (\Exception $e)
 		{
 			$response->setCode(500);
-			$response->appendBody($this->__500($e));
+			$response->setBody($this->__500($e));
 		}
 		finally
 		{
@@ -129,13 +138,27 @@ class webApplication extends base
 	 */
 	function __404($control, $action)
 	{
-		if (method_exists($control, '__404')) {
-			return $control->__404();
-		} else {
-			$viewConfig = new viewConfig();
-			$view = new view($viewConfig, '404.html');
-			return $view->display();
+		//调用模块内的404
+		$path = ROOT.'/application/control/'.$control.'.php';
+		if(realpath($path))
+		{
+			include_once $path;
+			$class = 'application\\control\\'.$control.'Control';
+			if(class_exists($class))
+			{
+				$control = new $class;
+				if (method_exists($control, '__404') || method_exists($control, '__call')) {
+					return $control->__404();
+				}
+			}
 		}
+		//主模块的404
+		$index404 = $this->__404($this->_config->default_control, '__404');
+		if(!empty($index404))
+			return $index404;
+		//系统404
+		$view = new view(config('view',true), '404.html');
+		return $view->display();
 	}
 
 	/**

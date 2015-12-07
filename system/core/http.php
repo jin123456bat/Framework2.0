@@ -8,7 +8,20 @@ namespace system\core;
  */
 class http
 {
-
+	static private $_instance = NULL;
+	
+	private function __construct()
+	{
+		
+	}
+	
+	static public function getInstance()
+	{
+		if(self::$_instance === NULL)
+			self::$_instance = new self();
+		return self::$_instance;
+	}
+	
 	/**
 	 * 获取当前url或者根据设置的控制器名称，方法名称，以及其他参数生成一个url
 	 *
@@ -32,16 +45,20 @@ class http
 			$config = config('system', true);
 			switch ($config['pathmode']) {
 				case 'pathinfo':
-					$parameter = '/' . urlencode($c) . '/' . urlencode($a);
+					$parameter = empty($c)?'':('/' . urlencode($c)) . empty($a)?'':('/' . urlencode($a));
 					foreach ($array as $key => $value) {
 						$parameter .= '/' . $key . '/' . urlencode($value);
 					}
 				default:
-					$parameter = '?c=' . urlencode($c) . '&a=' . urlencode($a);
-					$parameter .= empty($array)?'':('&' . http_build_query($array));
+					$temp = [];
+					if(!empty($c))
+						$temp['c'] = $c;
+					if (!empty($a))
+						$temp['a'] = $a;
+					$parameter = http_build_query(array_merge($temp,$array));
 			}
 			$query = ($query === NULL) ? '' : '#' . $query;
-			return $protocal . $this->host() . $port . $_SERVER['PHP_SELF'] . $parameter . $query;
+			return $protocal . $this->host() . $port . $_SERVER['PHP_SELF'] .(empty($parameter)?'':'?'). $parameter . $query;
 		}
 	}
 
@@ -100,9 +117,9 @@ class http
 	 * 页面跳转
 	 * @param unknown $url
 	 */
-	function jump($url)
+	function jump($url,$code = 302)
 	{
-		header('Location: '.$url,'302',true);
+		header('Location: '.$url,$code,true);
 	}
 
 	/**
@@ -110,9 +127,9 @@ class http
 	 *
 	 * @return HTTP /1.1
 	 */
-	function protal()
+	function isHttps()
 	{
-		return $_SERVER['SERVER_PROTOCOL'];
+		return ($this->port() == 443 || isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) != 'off') ? true : false;
 	}
 
 	/**
@@ -124,13 +141,103 @@ class http
 	{
 		return isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : NULL;
 	}
-
+	
+	/**
+	 * 判断是ajax请求
+	 * @return boolean
+	 */
+	function isAjax()
+	{
+		return isset($_SERVER["HTTP_X_REQUESTED_WITH"]) && strtolower($_SERVER["HTTP_X_REQUESTED_WITH"])=="xmlhttprequest";
+	}
+	
+	/**
+	 * 判断是否是手机浏览
+	 * @return boolean
+	 */
+	function isMobile()
+	{
+		// 如果有HTTP_X_WAP_PROFILE则一定是移动设备
+		if (isset ($_SERVER['HTTP_X_WAP_PROFILE'])){
+			return true;
+		}
+		//如果via信息含有wap则一定是移动设备,部分服务商会屏蔽该信息
+		if (isset ($_SERVER['HTTP_VIA'])) {
+			//找不到为flase,否则为true
+			return stristr($_SERVER['HTTP_VIA'], "wap") ? true : false;
+		}
+		//判断手机发送的客户端标志,兼容性有待提高
+		if (isset ($_SERVER['HTTP_USER_AGENT'])) {
+			$clientkeywords = array (
+				'nokia',
+				'sony',
+				'ericsson',
+				'mot',
+				'samsung',
+				'htc',
+				'sgh',
+				'lg',
+				'sharp',
+				'sie-',
+				'philips',
+				'panasonic',
+				'alcatel',
+				'lenovo',
+				'iphone',
+				'ipod',
+				'blackberry',
+				'meizu',
+				'android',
+				'netfront',
+				'symbian',
+				'ucweb',
+				'windowsce',
+				'palm',
+				'operamini',
+				'operamobi',
+				'openwave',
+				'nexusone',
+				'cldc',
+				'midp',
+				'wap',
+				'mobile'
+			);
+			// 从HTTP_USER_AGENT中查找手机浏览器的关键字
+			if (preg_match("/(" . implode('|', $clientkeywords) . ")/i", strtolower($_SERVER['HTTP_USER_AGENT']))) {
+				return true;
+			}
+		}
+		//协议法，因为有可能不准确，放到最后判断
+		if (isset ($_SERVER['HTTP_ACCEPT'])) {
+			// 如果只支持wml并且不支持html那一定是移动设备
+			// 如果支持wml和html但是wml在html之前则是移动设备
+			if ((strpos($_SERVER['HTTP_ACCEPT'], 'vnd.wap.wml') !== false) && (strpos($_SERVER['HTTP_ACCEPT'], 'text/html') === false || (strpos($_SERVER['HTTP_ACCEPT'], 'vnd.wap.wml') < strpos($_SERVER['HTTP_ACCEPT'], 'text/html')))) {
+				return true;
+			}
+		}
+	}
+	
+	/**
+	 * 手机类型
+	 * @return ios|android|other
+	 */
+	function mobileType()
+	{
+		if(strpos($_SERVER['HTTP_USER_AGENT'], 'iPhone')||strpos($_SERVER['HTTP_USER_AGENT'], 'iPad')){
+			return "ios";
+		}else if(strpos($_SERVER['HTTP_USER_AGENT'], 'Android')){
+			return "android";
+		}else{
+			return "other";
+		}
+	}
+	
 	/**
 	 * 浏览器信息
 	 *
 	 * @return mixed
 	 */
-	function agnet()
+	function agent()
 	{
 		return get_browser(NULL, true);
 	}

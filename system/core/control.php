@@ -1,6 +1,5 @@
 <?php
 namespace system\core;
-
 /**
  * 控制器
  *
@@ -9,25 +8,24 @@ namespace system\core;
  */
 class control extends base
 {
-
 	/**
 	 * response管理
 	 *
-	 * @var unknown
+	 * @var response
 	 */
 	public $response;
 
 	/**
 	 * 模板管理
 	 *
-	 * @var unknown
+	 * @var view
 	 */
 	public $view;
 
 	/**
 	 * 线程管理
 	 *
-	 * @var unknown
+	 * @var thread
 	 */
 	protected $thread;
 
@@ -35,21 +33,32 @@ class control extends base
 	{
 		parent::__construct();
 		$this->thread = new thread();
-		$viewConfig = config('view');
 	}
 
+	
+	
 	/**
-	 * 载入数据模型
+	 * 调用另外一个control中的action方法
 	 */
-	function model($name)
+	function call($c,$a)
 	{
-		$path = ROOT . '/application/model/' . $name . '.php';
-		$instance = NULL;
-		if (file_exists($path)) {
-			require $path;
-			$model = "application\\model\\" . $name . 'Model';
-			$instance = new $model($name);
+		if(is_object($c))
+		{
+			return $c->$a();
 		}
-		return $instance;
+		else
+		{
+			static $class = array();
+			$key = $c;
+			if (!isset($class[$key]))
+			{
+				$path = ROOT.'/application/control/'.$c.'.php';
+				include_once $path;
+				$control = 'application\\control\\'.$c.'Control';
+				$class[md5($c)] = (new $control());
+			}
+			$content = $class[$key]->$a();
+			return $content;
+		}
 	}
 }

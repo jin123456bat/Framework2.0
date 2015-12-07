@@ -3,12 +3,46 @@ namespace system\core;
 
 class session
 {
+	/**
+	 * 180
+	 * @var unknown
+	 */
+	public $_expire;
+	
+	private static $_instance = NULL;
 
-	function __construct()
+	private function __construct($config = NULL)
 	{
-		if (! session_id()) {
+		$this->_expire = session_cache_expire();
+		
+		if(isset($config['expire']))
+		{
+			session_cache_expire($config['expire']);
+			$this->_expire = $config['expire'];
+		}
+		
+		if(!session_id())
+		{
 			session_start();
 		}
+	}
+	
+	public static function setExpire($new_expire)
+	{
+		session_cache_expire($new_expire);
+		$this->_expire = $new_expire;
+	}
+	
+	public static function destory()
+	{
+		session_destroy();
+	}
+	
+	public static function getInstance()
+	{
+		if(empty(self::$_instance))
+			self::$_instance = new self();
+		return self::$_instance;
 	}
 
 	function __get($name)
